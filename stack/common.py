@@ -1,6 +1,5 @@
 from aws_cdk import (
     Stack,
-    aws_ec2 as ec2,
     aws_s3 as s3,
     aws_iam as iam,
     CfnOutput as CfnOutput,
