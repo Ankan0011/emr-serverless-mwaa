@@ -38,3 +38,49 @@ class MwaaStack(Stack):
             path="/service-role/",
         )
 
+        security_group = ec2.SecurityGroup(self, id="mwaa-sg", vpc=vpc, security_group_name="mwaa-sg")
+        security_group.connections.allow_internally(ec2.Port.all_traffic(), "MWAA")
+
+        # Enable logging
+        logging_configuration = mwaa.CfnEnvironment.LoggingConfigurationProperty(
+            task_logs=mwaa.CfnEnvironment.ModuleLoggingConfigurationProperty(
+                enabled=True, log_level="INFO"
+            ),
+            worker_logs=mwaa.CfnEnvironment.ModuleLoggingConfigurationProperty(
+                enabled=True, log_level="INFO"
+            ),
+            scheduler_logs=mwaa.CfnEnvironment.ModuleLoggingConfigurationProperty(
+                enabled=True, log_level="INFO"
+            ),
+            dag_processing_logs=mwaa.CfnEnvironment.ModuleLoggingConfigurationProperty(
+                enabled=True, log_level="INFO"
+            ),
+            webserver_logs=mwaa.CfnEnvironment.ModuleLoggingConfigurationProperty(
+                enabled=True, log_level="INFO"
+            ),
+        )
+
+        # Create our MWAA
+        subnets = [subnet.subnet_id for subnet in vpc.private_subnets]
+        airflow = mwaa.CfnEnvironment(
+            self,
+            "airflow-v2",
+            name = mwaa_name,
+            airflow_version="2.2.2",
+            dag_s3_path=f"dags/",
+            source_bucket_arn=bucket.bucket_arn,
+            execution_role_arn=mwaa_service_role.role_arn,
+            requirements_s3_path="requiments.txt",
+            webserver_access_mode="PUBLIC_ONLY",
+            environment_class="mw1.small",
+            network_configuration=mwaa.CfnEnvironment.NetworkConfigurationProperty(
+                subnet_ids=subnets,
+                security_group_ids=[security_group.security_group_id]
+            ),
+            logging_configuration=logging_configuration,
+        )
+        airflow.node.add_dependency(files)
+
+        # Register a couple outputs
+        cdk.CfnOutput(self, "mwaa_bucket", value=bucket.bucket_name)
+        cdk.CfnOutput(self, "mwaa_url", value=f"https://{airflow.attr_webserver_url}")
