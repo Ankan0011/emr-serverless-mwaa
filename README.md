@@ -19,3 +19,10 @@ pip install -r requirements.txt
  * `cdk deploy`      deploy this stack to your default AWS account/region
  * `cdk diff`        compare deployed stack with current state
  * `cdk docs`        open CDK documentation
+
+## Further Improvement
+Few improvements can be made on this application. Please keep in mind that this setup is good for one time runs on EMR Serverless instead of cron jobs style applications.
+- Please keep the spark jobs in s3 or in other repos and make sure that the files are move to the location before the Airflow dags are triggered.
+- Use a configuration file to keep the spark python files path or other environment variables.
+- [TODO] Need to implement logs to s3 bucket.
+- [TODO] Need to add the test scripts for the application.
